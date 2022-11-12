@@ -2,6 +2,7 @@ import * as dotenv from 'dotenv';
 import express from 'express';
 import mongoose from 'mongoose';
 import process from 'node:process';
+import AuthorExist from './middleware/AuthorExist.js';
 import EmailExist from './middleware/EmailExist.js';
 import LoginDetails from './middleware/LoginDetails.js';
 import PostDetails from './middleware/PostDetails.js';
@@ -59,6 +60,39 @@ app.post('/posts/:id', [UserExist, PostDetails], async (request, response) => {
 
   const post = await newPost.save();
   response.status(201).json(post);
+});
+
+app.get("/users/:userId/posts", AuthorExist, async (request, response) => {
+  const { userId } = request.params;
+  const { limit, offset } = request.query;
+
+  response
+    .status(200)
+    .json(
+      await Post.aggregate([
+        { $match: { authorId: mongoose.Types.ObjectId(userId) } },
+        { $sort: { date: -1 } },
+        { $limit: parseInt(limit) || 20 },
+        { $skip: parseInt(offset) || 0 },
+      ])
+    );
+});
+
+app.delete('/posts/:postId', async (request, response) => {
+  const { postId } = request.params;
+
+  await Post.updateOne(
+    {
+      _id: postId,
+    },
+    {
+      deletedAt: Date.now(),
+    }
+  );
+
+  response.status(200).json({
+    message: 'Successfully removed post',
+  });
 });
 
 app.listen(PORT, () => {

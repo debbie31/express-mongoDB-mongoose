@@ -12,6 +12,10 @@ const postSchema = new Schema({
     required: true,
   },
   authorId: Types.ObjectId,
+  date: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 export default model('Post', postSchema);
